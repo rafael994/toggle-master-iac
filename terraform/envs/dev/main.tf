@@ -6,3 +6,13 @@ module "networking" {
   private_subnet_cidr = "10.0.2.0/24"
   region              = "us-east-1"
 }
+
+module "eks" {
+  source = "../../modules/eks"
+
+  vpc_id = module.networking.vpc_id
+
+  subnet_ids = module.networking.public_subnets
+
+  node_subnet_ids = module.networking.public_subnets
+}
