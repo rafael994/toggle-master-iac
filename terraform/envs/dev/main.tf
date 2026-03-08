@@ -16,3 +16,39 @@ module "eks" {
 
   node_subnet_ids = module.networking.public_subnets
 }
+module "ecr" {
+
+  source = "../../modules/ecr"
+
+  repositories = [
+    "auth-service",
+    "flags-service",
+    "targeting-service",
+    "evaluation-service",
+    "analytics-service"
+  ]
+
+}
+module "dynamodb" {
+  source = "../../modules/dynamodb"
+}
+
+module "sqs" {
+  source = "../../modules/sqs"
+}
+
+module "redis" {
+
+  source = "../../modules/redis"
+
+  subnet_ids = module.networking.private_subnets
+
+}
+
+module "rds" {
+
+  source = "../../modules/rds"
+
+  subnet_ids = module.networking.private_subnets
+
+}

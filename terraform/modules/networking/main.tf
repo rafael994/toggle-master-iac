@@ -22,6 +22,7 @@ resource "aws_subnet" "public_a" {
 
   tags = {
     Name = "togglemaster-public-a"
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -33,7 +34,8 @@ resource "aws_subnet" "public_b" {
 
   tags = {
     Name = "togglemaster-public-b"
-  }
+    "kubernetes.io/role/elb" = "1" 
+ }
 }
 
 resource "aws_subnet" "private_a" {
@@ -43,7 +45,8 @@ resource "aws_subnet" "private_a" {
 
   tags = {
     Name = "togglemaster-private-a"
-  }
+    "kubernetes.io/role/internal-elb" = "1" 
+ }
 }
 
 resource "aws_subnet" "private_b" {
@@ -53,7 +56,8 @@ resource "aws_subnet" "private_b" {
 
   tags = {
     Name = "togglemaster-private-b"
-  }
+    "kubernetes.io/role/internal-elb" = "1" 
+ }
 }
 
 resource "aws_route_table" "public_rt" {
@@ -78,4 +82,44 @@ resource "aws_route_table_association" "public_a" {
 resource "aws_route_table_association" "public_b" {
   subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public_rt.id
+}
+resource "aws_security_group" "eks_ingress" {
+
+  name = "togglemaster-ingress-sg"
+
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+
+    from_port = 80
+    to_port   = 80
+
+    protocol = "tcp"
+
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+  ingress {
+
+    from_port = 443
+    to_port   = 443
+
+    protocol = "tcp"
+
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+  egress {
+
+    from_port = 0
+    to_port   = 0
+
+    protocol = "-1"
+
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
 }
