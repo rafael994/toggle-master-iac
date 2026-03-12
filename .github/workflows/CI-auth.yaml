@@ -32,17 +32,17 @@ jobs:
       # Ajuste o caminho abaixo conforme a saída do ls -lR
       - name: Download dependencies
         run: |
-          cd toggle-master-iac/auth-service
+          cd auth-service
           go mod download
 
       - name: Build
         run: |
-          cd toggle-master-iac/auth-service
+          cd auth-service
           go build -v ./...
 
       - name: Run Unit Tests
         run: |
-          cd toggle-master-iac/auth-service
+          cd auth-service
           go test -v ./...
 
   lint-static-analysis:
@@ -117,7 +117,7 @@ jobs:
       # Build Docker image (ajuste o caminho do Dockerfile se necessário)
       - name: Build Docker image
         run: |
-          docker build -f toggle-master-iac/auth-service/Dockerfile $IMAGE_NAME:${{ github.sha }} .
+          docker build -f auth-service/Dockerfile $IMAGE_NAME:${{ github.sha }} .
 
       # Scan Docker image com Trivy (container scan)
       - name: Scan Docker image with Trivy
