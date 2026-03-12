@@ -17,14 +17,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List files
-        run: ls -R
+      # Se usar submódulos, descomente a linha abaixo
+      # - name: Checkout submodules
+      #   run: git submodule update --init --recursive
+
+      - name: List files after checkout
+        run: ls -lR
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
 
+      # Ajuste o caminho abaixo conforme a saída do ls -lR
       - name: Download dependencies
         run: |
           cd toggle-master-iac/auth-service
@@ -112,7 +117,7 @@ jobs:
       # Build Docker image (ajuste o caminho do Dockerfile se necessário)
       - name: Build Docker image
         run: |
-          docker build -f toggle-master-iac\auth-service\Dockerfile $IMAGE_NAME:${{ github.sha }} .
+          docker build -f toggle-master-iac/auth-service/Dockerfile $IMAGE_NAME:${{ github.sha }} .
 
       # Scan Docker image com Trivy (container scan)
       - name: Scan Docker image with Trivy
