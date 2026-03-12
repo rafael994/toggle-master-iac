@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  IMAGE_NAME: ${{ secrets.ECR_REPOSITORY }}
+  IMAGE_NAME: ${{ secrets.ECR_REPOSITORY_EVALUATION }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
