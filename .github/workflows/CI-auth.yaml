@@ -17,13 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Se usar submódulos, descomente a linha abaixo
-      # - name: Checkout submodules
-      #   run: git submodule update --init --recursive
-
-      - name: List files after checkout
-        run: ls -lR
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
