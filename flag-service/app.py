@@ -110,7 +110,7 @@ def create_flag():
         log.warning(f"Tentativa de criar flag duplicada: '{name}'")
         return jsonify({"error": f"Flag '{name}' já existe"}), 409
     except Exception as e:
-        if conn: 
+        if conn:
             conn.rollback()
         log.error(f"Erro ao criar flag: {e}")
         return jsonify(
@@ -249,9 +249,9 @@ def delete_flag(name):
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: 
+        if cur:
             cur.close()
-        if conn: 
+        if conn:
             pool.putconn(conn)
 
 

@@ -79,6 +79,15 @@ jobs:
           output: 'trivy-sca-results.json'
           ignore-unfixed: true
 
+      - name: Show Trivy SCA Results (pretty)
+        run: jq . trivy-sca-results.json
+
+      - name: Upload Trivy SCA results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-sca-results
+          path: trivy-sca-results.json
+
       # SAST com gosec
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
@@ -87,6 +96,15 @@ jobs:
         run: |
           cd evaluation-service
           $(go env GOPATH)/bin/gosec -fmt=json -out=gosec-results.json ./... || true
+
+      - name: Show Gosec Results (pretty)
+        run: jq . evaluation-service/gosec-results.json
+
+      - name: Upload Gosec results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gosec-results
+          path: evaluation-service/gosec-results.json
 
       # Checa vulnerabilidades críticas no Trivy SCA e gosec (fail if found)
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
@@ -112,7 +130,7 @@ jobs:
       # Build Docker image (ajuste o caminho do Dockerfile se necessário)
       - name: Build Docker image
         run: |
-          docker build -f evaluation-service\Dockerfile $IMAGE_NAME:${{ github.sha }} .
+          docker build -f evaluation-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
 
       # Scan Docker image com Trivy (container scan)
       - name: Scan Docker image with Trivy
@@ -122,6 +140,15 @@ jobs:
           format: 'json'
           output: 'trivy-image-results.json'
           ignore-unfixed: true
+
+      - name: Show Trivy Image Scan Results (pretty)
+        run: jq . trivy-image-results.json
+
+      - name: Upload Trivy Image Scan results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-image-results
+          path: trivy-image-results.json
 
       # Fail on critical vulnerabilities in image scan
       - name: Fail on Critical Vulnerabilities (Image Scan)
