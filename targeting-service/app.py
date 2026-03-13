@@ -1,14 +1,15 @@
+"""Este módulo cria o microsserviço de Targeting."""
 import os
 import sys
+import json
+import logging
+from dotenv import load_dotenv
+from functools import wraps
 import psycopg
 import requests
-import json
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from flask import Flask, request, jsonify
-from dotenv import load_dotenv
-from functools import wraps
-import logging
 
 # Configura o logging
 logging.basicConfig(level=logging.INFO)
@@ -31,8 +32,11 @@ if not DATABASE_URL or not AUTH_SERVICE_URL:
 try:
     pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=5)
     log.info("Pool de conexões com o PostgreSQL (targeting) inicializado.")
-except Exception as e:
-    log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
+except psycopg_pool.PoolTimeout as e:
+    log.critical("Timeout ao inicializar o pool de conexões com o PostgreSQL: %s", e)
+    sys.exit(1)
+except psycopg.Error as e:
+    log.critical("Erro fatal ao conectar ao PostgreSQL: %s", e)
     sys.exit(1)
 
 
@@ -50,7 +54,7 @@ def require_auth(f):
             )
             if response.status_code != 200:
                 log.warning(
-                    f"Falha na validação da chave (status: {response.status_code})"
+                    "Falha na validação da chave (status: %s)", response.status_code
                 )
                 return jsonify({"error": "Chave de API inválida"}), 401
         except requests.exceptions.Timeout:
@@ -90,15 +94,19 @@ def create_rule():
     try:
         with pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute(
-                    "INSERT INTO targeting_rules (flag_name, is_enabled, rules, created_at, updated_at) "
-                    "VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *",
-                    (flag_name, is_enabled, json.dumps(rules_obj)),
-                )
-                new_rule = cur.fetchone()
-                conn.commit()
-                log.info(f"Regra para '{flag_name}' criada com sucesso.")
-                return jsonify(new_rule), 201
+               cur.execute(
+                    """
+                    INSERT INTO targeting_rules (
+                        flag_name, is_enabled, rules, created_at, updated_at
+                    )
+                    VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *
+                    """,
+                    (flag_name, is_enabled, json.dumps(rules_obj))
+                    )
+            new_rule = cur.fetchone()
+            conn.commit()
+            log.info(f"Regra para '{flag_name}' criada com sucesso.")
+            return jsonify(new_rule), 201
     except psycopg.errors.UniqueViolation:
         log.warning(f"Tentativa de criar regra duplicada: '{flag_name}'")
         return jsonify({"error": f"Regra para a flag '{flag_name}' já existe"}), 409
