@@ -114,6 +114,7 @@ def process_message(message):
             e
         )
 
+
 def sqs_worker_loop():
     """Loop principal do worker que ouve a fila SQS"""
     log.info("Iniciando o worker SQS...")

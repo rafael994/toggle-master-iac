@@ -105,7 +105,7 @@ def create_flag():
         log.info(f"Flag '{name}' criada com sucesso.")
         return jsonify(new_flag), 201
     except psycopg2.IntegrityError:
-        if conn: 
+        if conn:
             conn.rollback()
         log.warning(f"Tentativa de criar flag duplicada: '{name}'")
         return jsonify({"error": f"Flag '{name}' já existe"}), 409
@@ -117,9 +117,9 @@ def create_flag():
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: 
+        if cur:
             cur.close()
-        if conn: 
+        if conn:
             pool.putconn(conn)
 
 
@@ -141,9 +141,9 @@ def get_flags():
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: 
+        if cur:
             cur.close()
-        if conn: 
+        if conn:
             pool.putconn(conn)
 
 
@@ -167,9 +167,9 @@ def get_flag(name):
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: 
+        if cur:
             cur.close()
-        if conn: 
+        if conn:
             pool.putconn(conn)
 
 
@@ -213,16 +213,16 @@ def update_flag(name):
         log.info(f"Flag '{name}' atualizada com sucesso.")
         return jsonify(updated_flag), 200
     except Exception as e:
-        if conn: 
+        if conn:
             conn.rollback()
         log.error(f"Erro ao atualizar flag '{name}': {e}")
         return jsonify(
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: 
+        if cur:
             cur.close()
-        if conn: 
+        if conn:
             pool.putconn(conn)
 
 
@@ -242,15 +242,17 @@ def delete_flag(name):
         log.info(f"Flag '{name}' deletada com sucesso.")
         return "", 204   # 204 No Content
     except Exception as e:
-        if conn: 
+        if conn:
             conn.rollback()
         log.error(f"Erro ao deletar flag '{name}': {e}")
         return jsonify(
             {"error": "Erro interno do servidor", "details": str(e)}
         ), 500
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur: 
+            cur.close()
+        if conn: 
+            pool.putconn(conn)
 
 
 if __name__ == '__main__':
