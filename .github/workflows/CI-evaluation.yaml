@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          cdevaluation-service
+          cd evaluation-service
           go test -v ./...
 
   lint-static-analysis:
@@ -53,7 +53,9 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 
       - name: Run golangci-lint
-        run: $(go env GOPATH)/bin/golangci-lint run ./...
+        run: |
+          cd evaluation-service
+          $(go env GOPATH)/bin/golangci-lint run ./...
 
   security-scan:
     runs-on: ubuntu-latest
@@ -83,6 +85,7 @@ jobs:
 
       - name: Run gosec (SAST)
         run: |
+          cd evaluation-service
           $(go env GOPATH)/bin/gosec -fmt=json -out=gosec-results.json ./... || true
 
       # Checa vulnerabilidades críticas no Trivy SCA e gosec (fail if found)

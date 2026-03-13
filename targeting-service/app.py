@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 # Carrega .env para desenvolvimento local
-load_dotenv() 
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -35,6 +35,7 @@ except Exception as e:
     log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
     sys.exit(1)
 
+
 # --- Middleware de Autenticação ---
 def require_auth(f):
     @wraps(f)
@@ -42,47 +43,57 @@ def require_auth(f):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             return jsonify({"error": "Authorization header obrigatório"}), 401
-        
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
-            response = requests.get(validate_url, headers={"Authorization": auth_header}, timeout=3)
+            response = requests.get(
+                validate_url, headers={"Authorization": auth_header}, timeout=3
+            )
             if response.status_code != 200:
-                log.warning(f"Falha na validação da chave (status: {response.status_code})")
+                log.warning(
+                    f"Falha na validação da chave (status: {response.status_code})"
+                )
                 return jsonify({"error": "Chave de API inválida"}), 401
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
-            return jsonify({"error": "Serviço de autenticação indisponível (timeout)"}), 504
+            return (
+                jsonify({"error": "Serviço de autenticação indisponível (timeout)"}),
+                504,
+            )
         except requests.exceptions.RequestException as e:
             log.error(f"Erro ao conectar com o auth-service: {e}")
             return jsonify({"error": "Serviço de autenticação indisponível"}), 503
 
         return f(*args, **kwargs)
+
     return decorated
+
 
 # --- Endpoints da API ---
 
-@app.route('/health')
+
+@app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
-@app.route('/rules', methods=['POST'])
+
+@app.route("/rules", methods=["POST"])
 @require_auth
 def create_rule():
     data = request.get_json()
-    if not data or 'flag_name' not in data or 'rules' not in data:
+    if not data or "flag_name" not in data or "rules" not in data:
         return jsonify({"error": "'flag_name' e 'rules' (JSON) são obrigatórios"}), 400
-    
-    flag_name = data['flag_name']
-    rules_obj = data['rules']
-    is_enabled = data.get('is_enabled', True)
-    
+
+    flag_name = data["flag_name"]
+    rules_obj = data["rules"]
+    is_enabled = data.get("is_enabled", True)
+
     try:
         with pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     "INSERT INTO targeting_rules (flag_name, is_enabled, rules, created_at, updated_at) "
                     "VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *",
-                    (flag_name, is_enabled, json.dumps(rules_obj))
+                    (flag_name, is_enabled, json.dumps(rules_obj)),
                 )
                 new_rule = cur.fetchone()
                 conn.commit()
@@ -95,13 +106,16 @@ def create_rule():
         log.error(f"Erro ao criar regra: {e}")
         return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
 
-@app.route('/rules/<string:flag_name>', methods=['GET'])
+
+@app.route("/rules/<string:flag_name>", methods=["GET"])
 @require_auth
 def get_rule(flag_name):
     try:
         with pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute("SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,))
+                cur.execute(
+                    "SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,)
+                )
                 rule = cur.fetchone()
                 if not rule:
                     return jsonify({"error": "Regra não encontrada"}), 404
@@ -110,7 +124,8 @@ def get_rule(flag_name):
         log.error(f"Erro ao buscar regra '{flag_name}': {e}")
         return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
 
-@app.route('/rules/<string:flag_name>', methods=['PUT'])
+
+@app.route("/rules/<string:flag_name>", methods=["PUT"])
 @require_auth
 def update_rule(flag_name):
     data = request.get_json()
@@ -119,21 +134,26 @@ def update_rule(flag_name):
 
     fields = []
     values = []
-    
-    if 'rules' in data:
+
+    if "rules" in data:
         fields.append("rules = %s")
-        values.append(json.dumps(data['rules']))
-    if 'is_enabled' in data:
+        values.append(json.dumps(data["rules"]))
+    if "is_enabled" in data:
         fields.append("is_enabled = %s")
-        values.append(data['is_enabled'])
-    
+        values.append(data["is_enabled"])
+
     if not fields:
-        return jsonify({"error": "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"}), 400
-    
+        return (
+            jsonify(
+                {"error": "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"}
+            ),
+            400,
+        )
+
     values.append(flag_name)
-    
+
     query = f"UPDATE targeting_rules SET {', '.join(fields)} WHERE flag_name = %s RETURNING *"
-    
+
     try:
         with pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
@@ -148,13 +168,16 @@ def update_rule(flag_name):
         log.error(f"Erro ao atualizar regra '{flag_name}': {e}")
         return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
 
-@app.route('/rules/<string:flag_name>', methods=['DELETE'])
+
+@app.route("/rules/<string:flag_name>", methods=["DELETE"])
 @require_auth
 def delete_rule(flag_name):
     try:
         with pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM targeting_rules WHERE flag_name = %s", (flag_name,))
+                cur.execute(
+                    "DELETE FROM targeting_rules WHERE flag_name = %s", (flag_name,)
+                )
                 if cur.rowcount == 0:
                     return jsonify({"error": "Regra não encontrada"}), 404
                 conn.commit()
@@ -164,6 +187,7 @@ def delete_rule(flag_name):
         log.error(f"Erro ao deletar regra '{flag_name}': {e}")
         return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     port = int(os.getenv("PORT", 8003))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
