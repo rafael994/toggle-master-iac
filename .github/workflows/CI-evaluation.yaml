@@ -92,7 +92,7 @@ jobs:
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
         run: |
           CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
-          CRIT_GOSEC=$(jq '[.Issues[] | select(.severity=="HIGH")] | length' gosec-results.json)
+          CRIT_GOSEC=$(jq '[.Issues[] | select(.severity=="HIGH")] | length' evaluation-service/gosec-results.json)
           echo "Criticals in Trivy SCA: $CRIT_TRIVY"
           echo "Criticals in gosec (HIGH): $CRIT_GOSEC"
           if [ "$CRIT_TRIVY" != "0" ] || [ "$CRIT_GOSEC" != "0" ]; then

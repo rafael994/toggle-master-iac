@@ -116,14 +116,18 @@ func (a *App) createKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 // masterKeyAuthMiddleware protege endpoints que só podem ser acessados com a MASTER_KEY
 func (a *App) masterKeyAuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		keyString := strings.TrimPrefix(authHeader, "Bearer ")
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        authHeader := r.Header.Get("Authorization")
+        keyString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		if keyString != a.MasterKey {
-			http.Error(w, "Acesso não autorizado", http.StatusForbidden)
-			return
-		}
+        if keyString != a.MasterKey {
+            http.Error(w, "Acesso não autorizado", http.StatusForbidden)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
 		// Se a chave for válida, continua para o handler principal
 		next.ServeHTTP(w, r)
 	})
