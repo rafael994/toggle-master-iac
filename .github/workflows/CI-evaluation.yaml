@@ -101,7 +101,7 @@ jobs:
         run: jq . evaluation-service/gosec-results.json
 
       - name: Upload Gosec results as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gosec-results
           path: evaluation-service/gosec-results.json
@@ -145,7 +145,7 @@ jobs:
         run: jq . trivy-image-results.json
 
       - name: Upload Trivy Image Scan results as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-image-results
           path: trivy-image-results.json
