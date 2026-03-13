@@ -83,7 +83,7 @@ jobs:
         run: jq . trivy-sca-results.json
 
       - name: Upload Trivy SCA results as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-sca-results
           path: trivy-sca-results.json
