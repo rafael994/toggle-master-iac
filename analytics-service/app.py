@@ -69,6 +69,7 @@ except Exception as e:
 
 # --- SQS Worker ---
 
+
 def process_message(message):
     """Processa uma única mensagem SQS e a insere no DynamoDB"""
     try:
@@ -142,13 +143,16 @@ def sqs_worker_loop():
 
 # --- Servidor Flask (Apenas para Health Check) ---
 
+
 app = Flask(__name__)
+
 
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
 # --- Inicialização ---
+
 
 def start_worker():
     """Inicia o worker SQS em uma thread separada"""
@@ -157,6 +161,7 @@ def start_worker():
         daemon=True
     )
     worker_thread.start()
+
 
 start_worker()
 

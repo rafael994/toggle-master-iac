@@ -2,7 +2,7 @@ import os
 import sys
 import psycopg2
 import requests
-import json
+#import json
 from psycopg2.extras import RealDictCursor, Json
 from psycopg2.pool import SimpleConnectionPool
 from flask import Flask, request, jsonify
@@ -38,6 +38,7 @@ try:
 except psycopg2.OperationalError as e:
     log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
     sys.exit(1)
+
 
 # --- Middleware de Autenticação (Idêntico ao flag-service) ---
 def require_auth(f):
@@ -79,9 +80,11 @@ def require_auth(f):
 
 # --- Endpoints da API ---
 
+
 @app.route('/health')
 def health():
     return jsonify({"status": "ok"})
+
 
 @app.route('/rules', methods=['POST'])
 @require_auth
@@ -133,6 +136,7 @@ def create_rule():
         if conn:
             pool.putconn(conn)
 
+
 @app.route('/rules/<string:flag_name>', methods=['GET'])
 @require_auth
 def get_rule(flag_name):
@@ -161,6 +165,7 @@ def get_rule(flag_name):
             cur.close()
         if conn:
             pool.putconn(conn)
+
 
 @app.route('/rules/<string:flag_name>', methods=['PUT'])
 @require_auth
@@ -222,6 +227,7 @@ def update_rule(flag_name):
         if conn:
             pool.putconn(conn)
 
+
 @app.route('/rules/<string:flag_name>', methods=['DELETE'])
 @require_auth
 def delete_rule(flag_name):
@@ -256,7 +262,7 @@ def delete_rule(flag_name):
         if conn:
             pool.putconn(conn)
 
+
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8003))
     app.run(host='0.0.0.0', port=port, debug=False)
-    
