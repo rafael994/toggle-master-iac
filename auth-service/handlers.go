@@ -25,8 +25,8 @@ type CreateKeyResponse struct {
 func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
-    http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
-    return
+		http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -57,8 +57,8 @@ func (a *App) validateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	// Chave válida
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"}); err != nil {
-    http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
-    return
+		http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -108,24 +108,25 @@ func (a *App) createKeyHandler(w http.ResponseWriter, r *http.Request) {
 		Key:     newKey, // Retorna a chave em texto plano pela última vez
 		Message: "Guarde esta chave com segurança! Você não poderá vê-la novamente.",
 	}); err != nil {
-    http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
-    return
-	  }
+		http.Error(w, "Erro ao codificar resposta", http.StatusInternalServerError)
+		return
+	}
+}
 
 // --- Middleware ---
 
 // masterKeyAuthMiddleware protege endpoints que só podem ser acessados com a MASTER_KEY
 func (a *App) masterKeyAuthMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        authHeader := r.Header.Get("Authorization")
-        keyString := strings.TrimPrefix(authHeader, "Bearer ")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		keyString := strings.TrimPrefix(authHeader, "Bearer ")
 
-        if keyString != a.MasterKey {
-            http.Error(w, "Acesso não autorizado", http.StatusForbidden)
-            return
-        }
+		if keyString != a.MasterKey {
+			http.Error(w, "Acesso não autorizado", http.StatusForbidden)
+			return
+		}
 
-        // Se a chave for válida, continua para o handler principal
-        next.ServeHTTP(w, r)
-    })
+		// Se a chave for válida, continua para o handler principal
+		next.ServeHTTP(w, r)
+	})
 }

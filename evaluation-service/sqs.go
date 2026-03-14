@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
