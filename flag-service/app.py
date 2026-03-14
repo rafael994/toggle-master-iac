@@ -62,11 +62,7 @@ def require_auth(f):
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
             return (
-                jsonify(
-                    {
-                        "error": "Serviço de autenticação indisponível (timeout)"
-                    }
-                ),
+                jsonify({"error": "Timeout"}),
                 504,
             )  # Gateway Timeout
         except requests.exceptions.RequestException as e:
@@ -104,7 +100,8 @@ def create_flag():
         conn = pool.getconn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
-            "INSERT INTO flags (name, description, is_enabled, created_at, updated_at) "
+            "INSERT INTO flags "
+            "(name, description, is_enabled, created_at, updated_at) "
             "VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *",
             (name, description, is_enabled),
         )
@@ -205,7 +202,8 @@ def update_flag(name):
             jsonify(
                 {
                     "error": (
-                        "Pelo menos um campo('description','is_enabled') é obrigatório"
+                        "Pelo menos um campo ('description', "
+                        "'is_enabled') é obrigatório"
                     )
                 }
             ),
@@ -215,7 +213,7 @@ def update_flag(name):
     query = (
         f"UPDATE flags SET {', '.join(fields)} "
         f"WHERE name = %s RETURNING *"
-    )
+        )
     conn = None
     cur = None
     try:

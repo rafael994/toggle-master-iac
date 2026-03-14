@@ -64,11 +64,7 @@ def require_auth(f):
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
             return (
-                jsonify(
-                    {
-                        "error": "Serviço de autenticação indisponível (timeout)"
-                    }
-                ),
+                jsonify({"error": "Timeout"}),
                 504,
             )
         except requests.exceptions.RequestException as e:
@@ -198,7 +194,8 @@ def update_rule(flag_name):
             jsonify(
                 {
                     "error": (
-                        "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"
+                        "Pelo menos um campo ('description', "
+                        "'is_enabled') é obrigatório"
                     )
                 }
             ),
