@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+from flask import after_this_request
 
 # Configura o logging
 logging.basicConfig(
@@ -146,6 +147,14 @@ def sqs_worker_loop():
 
 
 app = Flask(__name__)
+
+
+@app.before_request
+def set_cache_control():
+    @after_this_request
+    def add_header(response):
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
 
 @app.route("/health")

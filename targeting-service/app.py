@@ -2,7 +2,6 @@ import os
 import sys
 import psycopg2
 import requests
-
 # import json
 from psycopg2.extras import RealDictCursor, Json
 from psycopg2.pool import SimpleConnectionPool
@@ -10,6 +9,7 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from functools import wraps
 import logging
+from flask import after_this_request
 
 # Configura o logging
 logging.basicConfig(level=logging.INFO)
@@ -19,6 +19,15 @@ log = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
+
+
+@app.before_request
+def set_cache_control():
+    @after_this_request
+    def add_header(response):
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
+
 
 # --- Configuração ---
 DATABASE_URL = os.getenv("DATABASE_URL")
