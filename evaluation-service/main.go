@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v9"
 	"github.com/joho/godotenv"
 )
 
@@ -63,16 +63,29 @@ func main() {
 
 	// --- Inicializa Clientes ---
 	
-	// Cliente Redis
-	opt, err := redis.ParseURL(redisURL)
-	if err != nil {
-		log.Fatalf("Não foi possível parsear a URL do Redis: %v", err)
-	}
-	rdb := redis.NewClient(opt)
-	if _, err := rdb.Ping(ctx).Result(); err != nil {
-		log.Fatalf("Não foi possível conectar ao Redis: %v", err)
-	}
-	log.Println("Conectado ao Redis com sucesso!")
+	ctx := context.Background()
+
+    opt, err := redis.ParseURL(redisURL)
+    if err != nil {
+        log.Fatalf("Não foi possível parsear a URL do Redis: %v", err)
+    }
+
+    rdb := redis.NewClient(opt)
+    if _, err := rdb.Ping(ctx).Result(); err != nil {
+        log.Fatalf("Não foi possível conectar ao Redis: %v", err)
+    }
+    log.Println("Conectado ao Redis com sucesso!")
+}
+	// // Cliente Redis
+	// opt, err := redis.ParseURL(redisURL)
+	// if err != nil {
+	// 	log.Fatalf("Não foi possível parsear a URL do Redis: %v", err)
+	// }
+	// rdb := redis.NewClient(opt)
+	// if _, err := rdb.Ping(ctx).Result(); err != nil {
+	// 	log.Fatalf("Não foi possível conectar ao Redis: %v", err)
+	// }
+	// log.Println("Conectado ao Redis com sucesso!")
 
 	// Cliente SQS (AWS SDK)
 	var sqsSvc *sqs.SQS
@@ -107,7 +120,7 @@ func main() {
 		RedisClient:         rdb,
 		SqsSvc:              sqsSvc,
 		SqsQueueURL:         sqsQueueURL,
-		HttpClient:          httpClient,
+		HttpClient:          &httpClient{},
 		FlagServiceURL:      flagSvcURL,
 		TargetingServiceURL: targetingSvcURL,
 	}

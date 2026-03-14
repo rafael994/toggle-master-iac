@@ -2,6 +2,7 @@ import os
 import sys
 import psycopg2
 import requests
+
 # import json
 from psycopg2.extras import RealDictCursor, Json
 from psycopg2.pool import SimpleConnectionPool
@@ -24,17 +25,13 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
 if not DATABASE_URL or not AUTH_SERVICE_URL:
-    log.critical(
-        "Erro: DATABASE_URL e AUTH_SERVICE_URL devem ser definidos."
-    )
+    log.critical("Erro: DATABASE_URL e AUTH_SERVICE_URL devem ser definidos.")
     sys.exit(1)
 
 # --- Pool de Conexão com o Banco ---
 try:
     pool = SimpleConnectionPool(1, 5, dsn=DATABASE_URL)
-    log.info(
-        "Pool de conexões com o PostgreSQL (targeting) inicializado."
-    )
+    log.info("Pool de conexões com o PostgreSQL (targeting) inicializado.")
 except psycopg2.OperationalError as e:
     log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
     sys.exit(1)
@@ -42,63 +39,59 @@ except psycopg2.OperationalError as e:
 
 # --- Middleware de Autenticação (Idêntico ao flag-service) ---
 def require_auth(f):
-    """ Middleware para validar a chave de API contra o auth-service """
+    """Middleware para validar a chave de API contra o auth-service"""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return jsonify(
-                {"error": "Authorization header obrigatório"}
-            ), 401
+            return jsonify({"error": "Authorization header obrigatório"}), 401
 
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
             response = requests.get(
-                validate_url,
-                headers={"Authorization": auth_header},
-                timeout=3
+                validate_url, headers={"Authorization": auth_header}, timeout=3
             )
             if response.status_code != 200:
                 log.warning(
-                    f"Falha na validação da chave "
-                    f"(status: {response.status_code})")   
+                    f"Falha na validação da chave " f"(status: {response.status_code})"
+                )
                 return jsonify({"error": "Chave de API inválida"}), 401
 
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
-            return jsonify(
-                {"error": "Serviço de autenticação indisponível (timeout)"}
-            ), 504
+            return (
+                jsonify({"error": "Serviço de autenticação indisponível (timeout)"}),
+                504,
+            )
         except requests.exceptions.RequestException as e:
             log.error(f"Erro ao conectar com o auth-service: {e}")
-            return jsonify(
-                {"error": "Serviço de autenticação indisponível"}
-            ), 503
+            return jsonify({"error": "Serviço de autenticação indisponível"}), 503
 
         return f(*args, **kwargs)
+
     return decorated
+
 
 # --- Endpoints da API ---
 
 
-@app.route('/health')
+@app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
 
-@app.route('/rules', methods=['POST'])
+@app.route("/rules", methods=["POST"])
 @require_auth
 def create_rule():
-    """ Cria uma nova regra de segmentação para uma flag """
+    """Cria uma nova regra de segmentação para uma flag"""
     data = request.get_json()
-    if not data or 'flag_name' not in data or 'rules' not in data:
-        return jsonify({
-            "error": "'flag_name' e 'rules' (JSON) são obrigatórios"
-        }), 400
+    if not data or "flag_name" not in data or "rules" not in data:
+        return jsonify({"error": "'flag_name' e 'rules' (JSON) são obrigatórios"}), 400
 
-    flag_name = data['flag_name']
-    rules_obj = data['rules']
-    is_enabled = data.get('is_enabled', True)
+    flag_name = data["flag_name"]
+    rules_obj = data["rules"]
+    is_enabled = data.get("is_enabled", True)
 
     conn = None
     cur = None
@@ -109,7 +102,7 @@ def create_rule():
             "INSERT INTO targeting_rules "
             "(flag_name, is_enabled, rules, created_at, updated_at) "
             "VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *",
-            (flag_name, is_enabled, Json(rules_obj))
+            (flag_name, is_enabled, Json(rules_obj)),
         )
         new_rule = cur.fetchone()
         conn.commit()
@@ -119,17 +112,12 @@ def create_rule():
         if conn:
             conn.rollback()
         log.warning(f"Tentativa de criar regra duplicada: '{flag_name}'")
-        return jsonify({
-            "error": f"Regra para a flag '{flag_name}' já existe"
-        }), 409
+        return jsonify({"error": f"Regra para a flag '{flag_name}' já existe"}), 409
     except Exception as e:
         if conn:
             conn.rollback()
         log.error(f"Erro ao criar regra: {e}")
-        return jsonify({
-            "error": "Erro interno do servidor",
-            "details": str(e)
-        }), 500
+        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
     finally:
         if cur:
             cur.close()
@@ -137,29 +125,23 @@ def create_rule():
             pool.putconn(conn)
 
 
-@app.route('/rules/<string:flag_name>', methods=['GET'])
+@app.route("/rules/<string:flag_name>", methods=["GET"])
 @require_auth
 def get_rule(flag_name):
-    """ Busca uma regra de segmentação pelo nome da flag """
+    """Busca uma regra de segmentação pelo nome da flag"""
     conn = None
     cur = None
     try:
         conn = pool.getconn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute(
-            "SELECT * FROM targeting_rules WHERE flag_name = %s",
-            (flag_name,)
-        )
+        cur.execute("SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,))
         rule = cur.fetchone()
         if not rule:
             return jsonify({"error": "Regra não encontrada"}), 404
         return jsonify(rule)
     except Exception as e:
         log.error(f"Erro ao buscar regra '{flag_name}': {e}")
-        return jsonify({
-            "error": "Erro interno do servidor",
-            "details": str(e)
-        }), 500
+        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
     finally:
         if cur:
             cur.close()
@@ -167,10 +149,10 @@ def get_rule(flag_name):
             pool.putconn(conn)
 
 
-@app.route('/rules/<string:flag_name>', methods=['PUT'])
+@app.route("/rules/<string:flag_name>", methods=["PUT"])
 @require_auth
 def update_rule(flag_name):
-    """ Atualiza a regra de segmentação de uma flag """
+    """Atualiza a regra de segmentação de uma flag"""
     data = request.get_json()
     if not data:
         return jsonify({"error": "Corpo da requisição obrigatório"}), 400
@@ -178,19 +160,20 @@ def update_rule(flag_name):
     fields = []
     values = []
 
-    if 'rules' in data:
+    if "rules" in data:
         fields.append("rules = %s")
-        values.append(Json(data['rules']))
-    if 'is_enabled' in data:
+        values.append(Json(data["rules"]))
+    if "is_enabled" in data:
         fields.append("is_enabled = %s")
-        values.append(data['is_enabled'])
+        values.append(data["is_enabled"])
 
     if not fields:
-        return jsonify({
-            "error": (
-                "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"
-            )
-        }), 400
+        return (
+            jsonify(
+                {"error": ("Pelo menos um campo ('rules', 'is_enabled') é obrigatório")}
+            ),
+            400,
+        )
 
     values.append(flag_name)
 
@@ -217,10 +200,7 @@ def update_rule(flag_name):
         if conn:
             conn.rollback()
         log.error(f"Erro ao atualizar regra '{flag_name}': {e}")
-        return jsonify({
-            "error": "Erro interno do servidor",
-            "details": str(e)
-        }), 500
+        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
     finally:
         if cur:
             cur.close()
@@ -228,19 +208,16 @@ def update_rule(flag_name):
             pool.putconn(conn)
 
 
-@app.route('/rules/<string:flag_name>', methods=['DELETE'])
+@app.route("/rules/<string:flag_name>", methods=["DELETE"])
 @require_auth
 def delete_rule(flag_name):
-    """ Deleta a regra de segmentação de uma flag """
+    """Deleta a regra de segmentação de uma flag"""
     conn = None
     cur = None
     try:
         conn = pool.getconn()
         cur = conn.cursor()
-        cur.execute(
-            "DELETE FROM targeting_rules WHERE flag_name = %s",
-            (flag_name,)
-        )
+        cur.execute("DELETE FROM targeting_rules WHERE flag_name = %s", (flag_name,))
 
         if cur.rowcount == 0:
             return jsonify({"error": "Regra não encontrada"}), 404
@@ -252,10 +229,7 @@ def delete_rule(flag_name):
         if conn:
             conn.rollback()
         log.error(f"Erro ao deletar regra '{flag_name}': {e}")
-        return jsonify({
-            "error": "Erro interno do servidor",
-            "details": str(e)
-        }), 500
+        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
     finally:
         if cur:
             cur.close()
@@ -263,6 +237,6 @@ def delete_rule(flag_name):
             pool.putconn(conn)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     port = int(os.getenv("PORT", 8003))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
@@ -24,7 +25,7 @@ const (
 // getDecision é o wrapper principal
 func (a *App) getDecision(userID, flagName string) (bool, error) {
 	// 1. Obter os dados da flag (do cache ou dos serviços)
-	info, err := a.getCombinedFlagInfo(flagName)
+	info, err := a.getCombinedFlagInfo(ctx,flagName)
 	if err != nil {
 		return false, err
 	}
@@ -34,7 +35,7 @@ func (a *App) getDecision(userID, flagName string) (bool, error) {
 }
 
 // getCombinedFlagInfo busca os dados no Redis, com fallback para os microsserviços
-func (a *App) getCombinedFlagInfo(flagName string) (*CombinedFlagInfo, error) {
+func (a *App) getCombinedFlagInfo(ctx context.Context, flagName string) (*CombinedFlagInfo, error) {
 	cacheKey := fmt.Sprintf("flag_info:%s", flagName)
 
 	// 1. Tentar buscar do Cache (Redis)

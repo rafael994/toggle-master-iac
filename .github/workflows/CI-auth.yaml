@@ -86,7 +86,7 @@ jobs:
       - name: Run gosec (SAST)
         run: |
           cd auth-service
-          $(go env GOPATH)/bin/gosec -fmt=json -out=../gosec-results.json ./... || true
+          $(go env GOPATH)/bin/gosec -fmt=json -out=gosec-results.json ./... || true
 
       # Checa vulnerabilidades críticas no Trivy SCA e gosec (fail if found)
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
