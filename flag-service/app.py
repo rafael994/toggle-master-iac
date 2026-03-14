@@ -49,7 +49,9 @@ def require_auth(f):
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
             response = requests.get(
-                validate_url, headers={"Authorization": auth_header}, timeout=3
+                validate_url,
+                headers={"Authorization": auth_header},
+                timeout=3,
             )
             if response.status_code != 200:
                 log.warning(
@@ -61,7 +63,9 @@ def require_auth(f):
             log.error("Timeout ao conectar com o auth-service")
             return (
                 jsonify(
-                    {"error": "Serviço de autenticação indisponível (timeout)"}
+                    {
+                        "error": "Serviço de autenticação indisponível (timeout)"
+                    }
                 ),
                 504,
             )  # Gateway Timeout
@@ -209,7 +213,8 @@ def update_flag(name):
         )
     values.append(name)  # Adiciona o 'name' para a cláusula WHERE
     query = (
-        f"UPDATE flags SET {', '.join(fields)} " f"WHERE name = %s RETURNING *"
+        f"UPDATE flags SET {', '.join(fields)} "
+        f"WHERE name = %s RETURNING *"
     )
     conn = None
     cur = None

@@ -50,7 +50,9 @@ def require_auth(f):
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
             response = requests.get(
-                validate_url, headers={"Authorization": auth_header}, timeout=3
+                validate_url,
+                headers={"Authorization": auth_header},
+                timeout=3,
             )
             if response.status_code != 200:
                 log.warning(
@@ -63,7 +65,9 @@ def require_auth(f):
             log.error("Timeout ao conectar com o auth-service")
             return (
                 jsonify(
-                    {"error": "Serviço de autenticação indisponível (timeout)"}
+                    {
+                        "error": "Serviço de autenticação indisponível (timeout)"
+                    }
                 ),
                 504,
             )

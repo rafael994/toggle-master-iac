@@ -80,13 +80,13 @@ jobs:
           ignore-unfixed: true
 
       - name: Show Trivy Image Scan Results (pretty)
-        run: jq . trivy-image-results.json
+        run: jq . ttrivy-sca-results.json
 
       - name: Upload Trivy Image Scan results as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-image-results
-          path: trivy-image-results.json    
+          name: ttrivy-sca-results
+          path: trtrivy-sca-results.json  
 
       # SAST com gosec
       - name: Install gosec

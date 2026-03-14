@@ -76,13 +76,13 @@ jobs:
           ignore-unfixed: true
 
       - name: Show Trivy Image Scan Results (pretty)
-        run: jq . trivy-image-results.json
+        run: jq . trivy-sca-results.json
 
       - name: Upload Trivy Image Scan results as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-image-results
-          path: trivy-image-results.json
+          name: trivy-sca-results
+          path: trivy-sca-results.json
 
       # SAST com Bandit
       - name: Run Bandit (SAST)
