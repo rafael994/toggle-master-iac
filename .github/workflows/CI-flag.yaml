@@ -76,7 +76,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Show Trivy Image Scan Results (pretty)
-        run: jq . trivy-sca-results.jsonn
+        run: jq . trivy-sca-results.json
 
       - name: Upload Trivy Image Scan results as artifact
         uses: actions/upload-artifact@v4
