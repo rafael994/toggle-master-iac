@@ -54,19 +54,25 @@ def require_auth(f):
             )
             if response.status_code != 200:
                 log.warning(
-                    f"Falha na validação da chave " f"(status: {response.status_code})"
+                    f"Falha na validação da chave "
+                    f"(status: {response.status_code})"
                 )
                 return jsonify({"error": "Chave de API inválida"}), 401
 
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
             return (
-                jsonify({"error": "Serviço de autenticação indisponível (timeout)"}),
+                jsonify(
+                    {"error": "Serviço de autenticação indisponível (timeout)"}
+                ),
                 504,
             )
         except requests.exceptions.RequestException as e:
             log.error(f"Erro ao conectar com o auth-service: {e}")
-            return jsonify({"error": "Serviço de autenticação indisponível"}), 503
+            return (
+                jsonify({"error": "Serviço de autenticação indisponível"}),
+                503,
+            )
 
         return f(*args, **kwargs)
 
@@ -87,7 +93,12 @@ def create_rule():
     """Cria uma nova regra de segmentação para uma flag"""
     data = request.get_json()
     if not data or "flag_name" not in data or "rules" not in data:
-        return jsonify({"error": "'flag_name' e 'rules' (JSON) são obrigatórios"}), 400
+        return (
+            jsonify(
+                {"error": "'flag_name' e 'rules' (JSON) são obrigatórios"}
+            ),
+            400,
+        )
 
     flag_name = data["flag_name"]
     rules_obj = data["rules"]
@@ -112,12 +123,18 @@ def create_rule():
         if conn:
             conn.rollback()
         log.warning(f"Tentativa de criar regra duplicada: '{flag_name}'")
-        return jsonify({"error": f"Regra para a flag '{flag_name}' já existe"}), 409
+        return (
+            jsonify({"error": f"Regra para a flag '{flag_name}' já existe"}),
+            409,
+        )
     except Exception as e:
         if conn:
             conn.rollback()
         log.error(f"Erro ao criar regra: {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        return (
+            jsonify({"error": "Erro interno do servidor", "details": str(e)}),
+            500,
+        )
     finally:
         if cur:
             cur.close()
@@ -134,14 +151,19 @@ def get_rule(flag_name):
     try:
         conn = pool.getconn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,))
+        cur.execute(
+            "SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,)
+        )
         rule = cur.fetchone()
         if not rule:
             return jsonify({"error": "Regra não encontrada"}), 404
         return jsonify(rule)
     except Exception as e:
         log.error(f"Erro ao buscar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        return (
+            jsonify({"error": "Erro interno do servidor", "details": str(e)}),
+            500,
+        )
     finally:
         if cur:
             cur.close()
@@ -170,7 +192,11 @@ def update_rule(flag_name):
     if not fields:
         return (
             jsonify(
-                {"error": ("Pelo menos um campo ('rules', 'is_enabled') é obrigatório")}
+                {
+                    "error": (
+                        "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"
+                    )
+                }
             ),
             400,
         )
@@ -200,7 +226,10 @@ def update_rule(flag_name):
         if conn:
             conn.rollback()
         log.error(f"Erro ao atualizar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        return (
+            jsonify({"error": "Erro interno do servidor", "details": str(e)}),
+            500,
+        )
     finally:
         if cur:
             cur.close()
@@ -217,7 +246,9 @@ def delete_rule(flag_name):
     try:
         conn = pool.getconn()
         cur = conn.cursor()
-        cur.execute("DELETE FROM targeting_rules WHERE flag_name = %s", (flag_name,))
+        cur.execute(
+            "DELETE FROM targeting_rules WHERE flag_name = %s", (flag_name,)
+        )
 
         if cur.rowcount == 0:
             return jsonify({"error": "Regra não encontrada"}), 404
@@ -229,7 +260,10 @@ def delete_rule(flag_name):
         if conn:
             conn.rollback()
         log.error(f"Erro ao deletar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        return (
+            jsonify({"error": "Erro interno do servidor", "details": str(e)}),
+            500,
+        )
     finally:
         if cur:
             cur.close()
