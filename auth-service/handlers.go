@@ -125,10 +125,7 @@ func (a *App) masterKeyAuthMiddleware(next http.Handler) http.Handler {
             return
         }
 
+        // Se a chave for válida, continua para o handler principal
         next.ServeHTTP(w, r)
     })
-}
-		// Se a chave for válida, continua para o handler principal
-		next.ServeHTTP(w, r)
-	})
 }

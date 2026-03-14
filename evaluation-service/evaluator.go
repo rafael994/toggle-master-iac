@@ -1,14 +1,17 @@
 package main
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -99,20 +102,74 @@ func (a *App) fetchFromServices(flagName string) (*CombinedFlagInfo, error) {
 	}, nil
 }
 
-// fetchFlag (função helper)
-func (a *App) fetchFlag(flagName string) (*Flag, error) {
-	url := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
+// // fetchFlag (função helper)
+// func (a *App) fetchFlag(flagName string) (*Flag, error) {
+// 	url := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
 
+// 	apiKey := os.Getenv("SERVICE_API_KEY")
+// 	req, _ := http.NewRequest("GET", url, nil)
+// 	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+// 	resp, err := a.HttpClient.Do(req)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("erro ao chamar flag-service: %w", err)
+// 	}
+// 	defer resp.Body.Close()
+
+// 	if resp.StatusCode == http.StatusNotFound {
+// 		return nil, &NotFoundError{flagName}
+// 	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return nil, fmt.Errorf("flag-service retornou status %d", resp.StatusCode)
+// 	}
+
+// 	body, _ := io.ReadAll(resp.Body)
+// 	var flag Flag
+// 	if err := json.Unmarshal(body, &flag); err != nil {
+// 		return nil, fmt.Errorf("erro ao desserializar resposta do flag-service: %w", err)
+// 	}
+// 	return &flag, nil
+// }
+
+var validFlagName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+func (a *App) fetchFlag(flagName string) (*Flag, error) {
+	// 1. Validação do flagName
+	if !validFlagName.MatchString(flagName) {
+		return nil, fmt.Errorf("flagName inválido")
+	}
+
+	// 2. Parse seguro da URL base
+	baseURL, err := url.Parse(a.FlagServiceURL)
+	if err != nil {
+		return nil, fmt.Errorf("URL base inválida: %w", err)
+	}
+
+	// 3. Construção segura do path
+	baseURL.Path = path.Join(baseURL.Path, "flags", flagName)
+	urlStr := baseURL.String()
+
+	// 4. Recuperação da API Key
 	apiKey := os.Getenv("SERVICE_API_KEY")
-	req, _ := http.NewRequest("GET", url, nil)
+	if apiKey == "" {
+		return nil, fmt.Errorf("SERVICE_API_KEY não definida")
+	}
+
+	// 5. Criação da requisição com tratamento de erro
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criar requisição: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
+	// 6. Execução da requisição
 	resp, err := a.HttpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao chamar flag-service: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// 7. Tratamento dos status HTTP
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, &NotFoundError{flagName}
 	}
@@ -120,7 +177,11 @@ func (a *App) fetchFlag(flagName string) (*Flag, error) {
 		return nil, fmt.Errorf("flag-service retornou status %d", resp.StatusCode)
 	}
 
-	body, _ := io.ReadAll(resp.Body)
+	// 8. Leitura e parsing do corpo da resposta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao ler resposta: %w", err)
+	}
 	var flag Flag
 	if err := json.Unmarshal(body, &flag); err != nil {
 		return nil, fmt.Errorf("erro ao desserializar resposta do flag-service: %w", err)
@@ -128,32 +189,93 @@ func (a *App) fetchFlag(flagName string) (*Flag, error) {
 	return &flag, nil
 }
 
+// type App struct {
+// 	TargetingServiceURL string
+// 	HttpClient          *http.Client
+// }
+
 func (a *App) fetchRule(flagName string) (*TargetingRule, error) {
-	url := fmt.Sprintf("%s/rules/%s", a.TargetingServiceURL, flagName)
-	apiKey := os.Getenv("SERVICE_API_KEY") // Usa a mesma chave
-	req, _ := http.NewRequest("GET", url, nil)
+	// 1. Validação do flagName
+	if !validFlagName.MatchString(flagName) {
+		return nil, fmt.Errorf("flagName inválido")
+	}
+
+	// 2. Parse seguro da URL base
+	baseURL, err := url.Parse(a.TargetingServiceURL)
+	if err != nil {
+		return nil, fmt.Errorf("URL base inválida: %w", err)
+	}
+
+	// 3. Construção segura do path
+	baseURL.Path = path.Join(baseURL.Path, "rules", flagName)
+	urlStr := baseURL.String()
+
+	// 4. Recuperação da API Key
+	apiKey := os.Getenv("SERVICE_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("SERVICE_API_KEY não definida")
+	}
+
+	// 5. Criação da requisição com tratamento de erro
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criar requisição: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
+	// 6. Execução da requisição
 	resp, err := a.HttpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao chamar targeting-service: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// 7. Tratamento dos status HTTP
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, &NotFoundError{flagName} // Não é um erro fatal
+		return nil, &NotFoundError{flagName}
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("targeting-service retornou status %d", resp.StatusCode)
 	}
 
-	body, _ := io.ReadAll(resp.Body)
+	// 8. Leitura e parsing do corpo da resposta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao ler resposta: %w", err)
+	}
 	var rule TargetingRule
 	if err := json.Unmarshal(body, &rule); err != nil {
 		return nil, fmt.Errorf("erro ao desserializar resposta do targeting-service: %w", err)
 	}
 	return &rule, nil
 }
+
+// func (a *App) fetchRule(flagName string) (*TargetingRule, error) {
+// 	url := fmt.Sprintf("%s/rules/%s", a.TargetingServiceURL, flagName)
+// 	apiKey := os.Getenv("SERVICE_API_KEY") // Usa a mesma chave
+// 	req, _ := http.NewRequest("GET", url, nil)
+// 	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+// 	resp, err := a.HttpClient.Do(req)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("erro ao chamar targeting-service: %w", err)
+// 	}
+// 	defer resp.Body.Close()
+
+// 	if resp.StatusCode == http.StatusNotFound {
+// 		return nil, &NotFoundError{flagName} // Não é um erro fatal
+// 	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return nil, fmt.Errorf("targeting-service retornou status %d", resp.StatusCode)
+// 	}
+
+// 	body, _ := io.ReadAll(resp.Body)
+// 	var rule TargetingRule
+// 	if err := json.Unmarshal(body, &rule); err != nil {
+// 		return nil, fmt.Errorf("erro ao desserializar resposta do targeting-service: %w", err)
+// 	}
+// 	return &rule, nil
+// }
 
 // runEvaluationLogic é onde a decisão é tomada
 func (a *App) runEvaluationLogic(info *CombinedFlagInfo, userID string) bool {
@@ -187,8 +309,8 @@ func (a *App) runEvaluationLogic(info *CombinedFlagInfo, userID string) bool {
 }
 
 func getDeterministicBucket(input string) int {
-	// Usamos SHA1 (rápido) e pegamos os primeiros 4 bytes
-	hasher := sha1.New()
+	// Usamos SHA256 (mais seguro) e pegamos os primeiros 4 bytes
+	hasher := sha256.New()
 	hasher.Write([]byte(input))
 	hash := hasher.Sum(nil)
 
