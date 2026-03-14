@@ -1,4 +1,4 @@
-"""Este módulo cria o microsserviço de Analytics."""
+"""Este módulo cria o microsserviço de Flag-service."""
 import os
 import sys
 import threading

@@ -1,13 +1,14 @@
+"""Este módulo cria o microsserviço de Flag."""
 import os
 import sys
-import psycopg2
 import requests
+from functools import wraps
+import logging
+import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from functools import wraps
-import logging
 
 # Configura o logging
 logging.basicConfig(level=logging.INFO)
@@ -56,8 +57,9 @@ def require_auth(f):
             )
             if response.status_code != 200:
                 log.warning(
-                    f"Falha na validação da chave (status: {response.status_code})"
-                )
+            f"Falha na validação da chave "
+            f"(status: {response.status_code})"
+            )
                 return jsonify({"error": "Chave de API inválida"}), 401
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")

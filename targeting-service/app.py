@@ -60,8 +60,8 @@ def require_auth(f):
             )
             if response.status_code != 200:
                 log.warning(
-                    f"Falha na validação da chave (status: {response.status_code})"
-                )
+                    f"Falha na validação da chave "
+                    f"(status: {response.status_code})")   
                 return jsonify({"error": "Chave de API inválida"}), 401
 
         except requests.exceptions.Timeout:
