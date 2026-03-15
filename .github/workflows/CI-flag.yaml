@@ -115,7 +115,7 @@ jobs:
       # Build Docker image
       - name: Build Docker image
         run: |
-          docker build -f flag-service/Dockerfile $IMAGE_NAME:${{ github.sha }} .
+          docker build -f flag-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
 
       # Scan Docker image com Trivy (container scan)
       - name: Scan Docker image with Trivy

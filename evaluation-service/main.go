@@ -110,10 +110,8 @@ func main() {
 			log.Println("Cliente SQS (ElasticMQ) inicializado com sucesso.")
 	}
 
-	// Cliente HTTP (com timeout)
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	// Cliente HTTP 
+	httpClient := http.Client,
 	
 
 	// Cria a instância da App
@@ -121,7 +119,7 @@ func main() {
 		RedisClient:         rdb,
 		SqsSvc:              sqsSvc,
 		SqsQueueURL:         sqsQueueURL,
-		HttpClient:          &httpClient{},
+		HttpClient:          httpClient,
 		FlagServiceURL:      flagSvcURL,
 		TargetingServiceURL: targetingSvcURL,
 	}
