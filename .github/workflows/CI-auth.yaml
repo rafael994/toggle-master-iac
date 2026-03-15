@@ -100,7 +100,7 @@ jobs:
       # Checa vulnerabilidades críticas no Trivy SCA e gosec (fail if found)
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
         run: |
-          CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
+          CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
           CRIT_GOSEC=$(jq '[.Issues[] | select(.severity=="HIGH")] | length' auth-service/gosec-results.json)
           echo "Criticals in Trivy SCA: $CRIT_TRIVY"
           echo "Criticals in gosec (HIGH): $CRIT_GOSEC"
