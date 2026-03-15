@@ -75,7 +75,7 @@ func main() {
         log.Fatalf("Não foi possível conectar ao Redis: %v", err)
     }
     log.Println("Conectado ao Redis com sucesso!")
-}
+
 	// // Cliente Redis
 	// opt, err := redis.ParseURL(redisURL)
 	// if err != nil {
@@ -114,6 +114,7 @@ func main() {
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
+	
 
 	// Cria a instância da App
 	app := &App{
