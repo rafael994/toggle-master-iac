@@ -130,7 +130,7 @@ jobs:
       # Build Docker image (ajuste o caminho do Dockerfile se necessário)
       - name: Build Docker image
         run: |
-          docker build -f evaluation-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
+          docker build -f evaluation-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} evaluation-service/
 
       # Scan Docker image com Trivy (container scan)
       - name: Scan Docker image with Trivy
