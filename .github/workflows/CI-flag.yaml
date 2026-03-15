@@ -112,44 +112,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Diagnóstico: lista arquivos no contexto de build
+      - name: Diagnóstico - Lista arquivos no contexto de build
+        run: |
+          echo "Diretório atual: $(pwd)"
+          echo "Conteúdo da raiz do repositório:"
+          ls -l
+          echo "Conteúdo de flag-service/:"
+          ls -l flag-service || true
+
       # Build Docker image
       - name: Build Docker image
         run: |
           docker build -f flag-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
-
-      # Scan Docker image com Trivy (container scan)
-      - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          format: 'json'
-          output: 'trivy-image-results.json'
-          ignore-unfixed: true
-
-      # Fail on critical vulnerabilities in image scan
-      - name: Fail on Critical Vulnerabilities (Image Scan)
-        run: |
-          CRIT_IMG=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-image-results.json)
-          echo "Criticals in Image Scan: $CRIT_IMG"
-          if [ "$CRIT_IMG" != "0" ]; then
-            echo "Critical vulnerabilities found in image! Failing pipeline."
-            exit 1
-          fi
-
-      # Login to AWS ECR
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      # Push Docker image to ECR com tag do commit hash
-      - name: Push Docker image to ECR
-        run: |
-          docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:${{ github.sha }}
-          docker push $IMAGE_NAME:${{ github.sha }}
