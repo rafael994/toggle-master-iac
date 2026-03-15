@@ -94,7 +94,7 @@ jobs:
       # Checa vulnerabilidades críticas no Trivy SCA e Bandit (fail if found)
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
         run: |
-          CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
+          CRIT_IMG=$(jq '[.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
           CRIT_BANDIT=$(jq '[.results[] | select(.issue_severity=="HIGH")] | length' bandit-results.json)
           echo "Criticals in Trivy SCA: $CRIT_TRIVY"
           echo "Criticals in Bandit (HIGH): $CRIT_BANDIT"

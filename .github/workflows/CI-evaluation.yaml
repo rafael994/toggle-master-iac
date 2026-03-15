@@ -153,7 +153,7 @@ jobs:
       # Fail on critical vulnerabilities in image scan
       - name: Fail on Critical Vulnerabilities (Image Scan)
         run: |
-          CRIT_IMG=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-image-results.json)
+          CRIT_IMG=$(jq '[.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-image-results.json)
           echo "Criticals in Image Scan: $CRIT_IMG"
           if [ "$CRIT_IMG" != "0" ]; then
             echo "Critical vulnerabilities found in image! Failing pipeline."
