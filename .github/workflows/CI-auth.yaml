@@ -141,6 +141,13 @@ jobs:
             echo "Critical vulnerabilities found in image! Failing pipeline."
             exit 1
           fi
+          
+        # Upload Trivy scan results as artifact
+      - name: Upload Trivy Scan Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-results
+          path: trivy-image-results.json  
 
       # Login to AWS ECR
       - name: Configure AWS credentials
