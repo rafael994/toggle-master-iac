@@ -17,7 +17,8 @@ ENV PATH=/root/.local/bin:$PATH
 COPY . .
 
 # Garante que não há versões conflitantes no ambiente final
-RUN pip uninstall -y werkzeug flask psycopg || true && \
+RUN apt-get update && apt-get upgrade -y openssl && \
+    pip uninstall -y werkzeug flask psycopg || true && \
     pip install --no-cache-dir --user -r requirements.txt && \
     pip show werkzeug && pip show flask
 

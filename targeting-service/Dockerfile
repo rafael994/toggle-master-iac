@@ -7,6 +7,7 @@ WORKDIR /targeting-service
 
 
 RUN apt-get update \
+    && apt-get upgrade -y openssl \
     && apt-get install -y --no-install-recommends postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 

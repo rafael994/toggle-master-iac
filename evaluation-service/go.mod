@@ -15,6 +15,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/onsi/gomega v1.27.6 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 )
