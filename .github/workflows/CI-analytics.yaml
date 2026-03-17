@@ -94,13 +94,13 @@ jobs:
       # Checa vulnerabilidades críticas no Trivy SCA e Bandit (fail if found)
       - name: Fail on Critical Vulnerabilities (SCA & SAST)
         run: |
-          CRIT_TRIVY=$(jq '[.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
-          CRIT_BANDIT=$(jq '[.results[] | select(.issue_severity=="HIGH")] | length' bandit-results.json)
+          CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
+          CRIT_GOSEC=$(jq '[.Issues[] | select(.severity=="HIGH")] | length' evaluation-service/gosec-results.json)
           echo "Criticals in Trivy SCA: $CRIT_TRIVY"
-          echo "Criticals in Bandit (HIGH): $CRIT_BANDIT"
-          if [ "$CRIT_TRIVY" != "0" ] || [ "$CRIT_BANDIT" != "0" ]; then
-            echo "Critical vulnerabilities found! Failing pipeline."
-            exit 1
+          echo "Criticals in gosec (HIGH): $CRIT_GOSEC"
+          if [ "$CRIT_TRIVY" != "0" ] || [ "$CRIT_GOSEC" != "0" ]; then
+          echo "Critical vulnerabilities found! Failing pipeline."
+          exit 1
           fi
 
   docker-build-push:
