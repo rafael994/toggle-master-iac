@@ -187,13 +187,13 @@ jobs:
 
       - name: Update image tag in deployment.yaml
         run: |
-          sed -i "s|$$image: $IMAGE_NAME:$$.*|\1${{ github.sha }}|" GitOps/auth/deployment.yaml
+          sed -i "s|$$image: $IMAGE_NAME:$$.*|\1${{ github.sha }}|" GitOps/flag/deployment.yaml
 
       - name: Commit and push updated deployment.yaml
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-          git add GitOps/analytics/deployment.yaml
+          git add GitOps/flag/deployment.yaml
           git commit -m "Update image tag to ${{ github.sha }}"
           git push origin main
         env:
