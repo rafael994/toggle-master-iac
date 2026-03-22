@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flag
+  namespace: flag
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flag
+  template:
+    metadata:
+      labels:
+        app: flag
+    spec:
+      containers:
+      - name: flag
+        image: 637423262039.dkr.ecr.us-east-1.amazonaws.com/tech-challenge/flag-service:latest
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - secretRef:
+            name: flag-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"

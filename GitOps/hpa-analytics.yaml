@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-hpa
+  namespace: analytics # Altere para o namespace correto, se necessário
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics # Nome do deployment do seu service
+  minReplicas: 2     # Número mínimo de pods
+  maxReplicas: 10    # Número máximo de pods
+  targetCPUUtilizationPercentage: 70
