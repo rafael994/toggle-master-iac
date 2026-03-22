@@ -171,7 +171,7 @@ jobs:
 
       - name: Update image tag in deployment.yaml
         run: |
-          sed -i "s|$$image: $IMAGE_NAME:$$.*|\1${{ github.sha }}|" GitOps/targeting/deployment.yaml
+          sed -i "s|image: $IMAGE_NAME:.*|image: $IMAGE_NAME:${{ github.sha }}|" GitOps/targeting/deployment.yaml
 
       - name: Commit and push updated deployment.yaml
         run: |
