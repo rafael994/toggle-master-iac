@@ -169,9 +169,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - - name: Update image tag in deployment.yaml
-          run: |
-              sed -i "s|$$image: $IMAGE_NAME:$$.*|\1${{ github.sha }}|" GitOps/flag/deployment.yaml
+      - name: Update image tag in deployment.yaml
+        run: |
+          sed -i "s|$$image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/flags-service:$$[^ ]*|\1$HASH|" GitOps/flag/deployment.yaml
 
       - name: Commit and push updated deployment.yaml
         run: |
