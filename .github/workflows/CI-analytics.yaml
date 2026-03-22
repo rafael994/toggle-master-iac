@@ -171,7 +171,7 @@ jobs:
 
       - name: Update image tag in deployment.yaml
         run: |
-          sed -i "s|$$image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/analytics-service:$$[^ ]*|\1$HASH|" GitOps/analytics/deployment.yaml
+          sed -i 's|$$image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/analytics-service:$$.*|\1'"$HASH"'|' GitOps/analytics/deployment.yaml
 
       - name: Commit and push updated deployment.yaml
         run: |
