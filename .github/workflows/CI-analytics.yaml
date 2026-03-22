@@ -17,16 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Solução 1: Verifique a versão do Go instalada
-      - name: Check Go version
-        run: go version
-
-      # Solução 2: Limpe o cache do Go
-      - name: Clean Go cache
-        run: |
-          go clean -modcache
-          go clean -cache
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

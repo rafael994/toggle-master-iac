@@ -21,6 +21,16 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.26.1'
+      
+      # Solução 1: Verifique a versão do Go instalada
+      - name: Check Go version
+        run: go version
+
+      # Solução 2: Limpe o cache do Go
+      - name: Clean Go cache
+        run: |
+          go clean -modcache
+          go clean -cache
 
       - name: Download dependencies
         run: |
