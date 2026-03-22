@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.1'
+          go-version: '1.24'
       
       # Solução 1: Verifique a versão do Go instalada
       - name: Check Go version
@@ -56,7 +56,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.1'
+          go-version: '1.24'
 
       - name: Install golangci-lint
         run: |
@@ -76,7 +76,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.1'
+          go-version: '1.24'
 
       # SCA com Trivy (go.mod)
       - name: Run Trivy SCA (go.mod)
