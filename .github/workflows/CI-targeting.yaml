@@ -173,6 +173,9 @@ jobs:
         run: |
           sed -i "s|image: $IMAGE_NAME:.*|image: $IMAGE_NAME:${{ github.sha }}|" GitOps/targeting/deployment.yaml
 
+      - name: Switch to feat/github-actions branch
+        run: git checkout -B feat/github-actions
+
       - name: Commit and push updated deployment.yaml
         run: |
           git config --global user.email "github-actions@github.com"
