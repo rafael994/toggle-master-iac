@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: evaluation-service
+  namespace: evaluation
+spec:
+  selector:
+    app: evaluation
+  ports:
+    - port: 80
+      targetPort: 8004
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: evaluation
+spec:
+  type: ExternalName
+  externalName: auth-service.auth.svc.cluster.local
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flag-service
+  namespace: evaluation
+spec:
+  type: ExternalName
+  externalName: flag-service.flag.svc.cluster.local
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: targeting-service
+  namespace: evaluation
+spec:
+  type: ExternalName
+  externalName: targeting-service.targeting.svc.cluster.local
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-service
+  namespace: evaluation
+spec:
+  type: ExternalName
+  externalName: analytics-service.analytics.svc.cluster.local
+  ports:
+    - port: 80

@@ -1,0 +1,196 @@
+name: CI Targeting-Service
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: ${{ secrets.ECR_REPOSITORY_TARGETING }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --user -r targeting-service/requirements.txt
+
+      - name: Run Unit Tests
+        run: |
+          if [ -f "pytest.ini" ] || [ -d "tests" ]; then
+            pip install --user pytest
+            pytest
+          else
+            echo "No tests found, skipping."
+          fi
+
+  lint-static-analysis:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linter
+        run: pip install --user flake8
+
+      - name: Run flake8 linter
+        run: flake8 .
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: lint-static-analysis
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # SCA com Trivy (dependências)
+      - name: Run Trivy SCA (requirements.txt)
+        id: trivy-sca
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-sca-results.json'
+          ignore-unfixed: true
+
+      - name: Show Trivy Image Scan Results (pretty)
+        run: jq . trivy-sca-results.json
+
+      - name: Upload Trivy Image Scan results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sca-results
+          path: trivy-sca-results.json
+
+      # SAST com Bandit
+      - name: Run Bandit (SAST)
+        id: bandit-sast
+        run: |
+          pip install --user bandit
+          bandit -r . -f json -o bandit-results.json || true
+
+      # Checa vulnerabilidades críticas no Trivy SCA e Bandit (fail if found)
+      - name: Fail on Critical Vulnerabilities (SCA & SAST)
+        run: |
+          CRIT_TRIVY=$(jq '[.Results[].Vulnerabilities // [] | .[] | select(.Severity=="CRITICAL")] | length' trivy-sca-results.json)
+          CRIT_BANDIT=$(jq '[.results[] | select(.issue_severity=="HIGH")] | length' bandit-results.json)
+          echo "Criticals in Trivy SCA: $CRIT_TRIVY"
+          echo "Criticals in Bandit (HIGH): $CRIT_BANDIT"
+          if [ "$CRIT_TRIVY" != "0" ] || [ "$CRIT_BANDIT" != "0" ]; then
+            echo "Critical vulnerabilities found! Failing pipeline."
+            exit 1
+          fi
+
+  docker-build-push:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -f targeting-service/Dockerfile -t $IMAGE_NAME:${{ github.sha }} targeting-service/
+
+      # Scan Docker image com Trivy (container scan)
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'json'
+          output: 'trivy-image-results.json'
+          ignore-unfixed: true
+
+       # Upload Trivy scan results as artifact
+      - name: Upload Trivy Scan Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-results
+          path: trivy-image-results.json   
+
+      # Fail on critical vulnerabilities in image scan
+      - name: Fail on Critical Vulnerabilities (Image Scan)
+        run: |
+          CRIT_IMG=$(jq '[.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-image-results.json)
+          echo "Criticals in Image Scan: $CRIT_IMG"
+          if [ "$CRIT_IMG" != "0" ]; then
+            echo "Critical vulnerabilities found in image! Failing pipeline."
+            exit 1
+          fi
+
+      # Login to AWS ECR
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Push Docker image to ECR com tag do commit hash
+      - name: Push Docker image to ECR
+        run: |
+          docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:${{ github.sha }}
+          docker push $IMAGE_NAME:${{ github.sha }}
+
+  update-deployment-yaml:
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: feat/github-actions
+
+      - name: Configura usuário do git
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Atualiza branch local com remoto
+        run: |
+          git pull --rebase origin feat/github-actions
+
+      - name: Atualiza deployment.yaml
+        run: |
+          sed -i "s|image: $IMAGE_NAME:.*|image: $IMAGE_NAME:${{ github.sha }}|" GitOps/targeting/deployment.yaml
+
+      - name: Commit e push das alterações
+        run: |
+          git add GitOps/targeting/deployment.yaml
+          git commit -m "Update image tag to ${{ github.sha }}" || echo "No changes to commit"
+          git push origin feat/github-actions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

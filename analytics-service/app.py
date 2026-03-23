@@ -1,0 +1,180 @@
+"""Este módulo cria o microsserviço de Flag-service."""
+import os
+import sys
+import threading
+import json
+import uuid
+import time
+import logging
+import boto3
+from botocore.exceptions import NoCredentialsError, ClientError
+from flask import Flask, jsonify
+from dotenv import load_dotenv
+from flask import after_this_request
+
+# Configura o logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+log = logging.getLogger(__name__)
+
+# Carrega .env para desenvolvimento local
+load_dotenv()
+
+# --- Configuração ---
+AWS_REGION = os.getenv("AWS_REGION")
+SQS_QUEUE_URL = os.getenv("AWS_SQS_URL")
+SQS_ENDPOINT = os.getenv("AWS_SQS_ENDPOINT")
+DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE")
+DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
+
+if not all([
+    AWS_REGION,
+    SQS_QUEUE_URL,
+    SQS_ENDPOINT,
+    DYNAMODB_TABLE_NAME,
+    DYNAMODB_ENDPOINT,
+]):
+    log.critical(
+        "Erro: AWS_REGION, AWS_SQS_URL, AWS_SQS_ENDPOINT, "
+        "DYNAMODB_TABLE e DYNAMODB_ENDPOINT devem ser definidos."
+    )
+    sys.exit(1)
+
+# --- Clientes Boto3 ---
+try:
+    session = boto3.Session(
+        region_name=AWS_REGION,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
+
+    sqs_client = session.client(
+        "sqs",
+        endpoint_url=SQS_ENDPOINT
+    )
+    dynamodb_client = session.client(
+        "dynamodb",
+        endpoint_url=DYNAMODB_ENDPOINT
+    )
+
+    log.info("Clientes Boto3 inicializados (SQS e DynamoDB local).")
+
+except NoCredentialsError:
+    log.critical("Credenciais da AWS não encontradas.")
+    sys.exit(1)
+except Exception as e:
+    log.critical("Erro ao inicializar o Boto3: %s", e)
+    sys.exit(1)
+
+# --- SQS Worker ---
+
+
+def process_message(message):
+    """Processa uma única mensagem SQS e a insere no DynamoDB"""
+    try:
+        log.info("Processando mensagem ID: %s", message["MessageId"])
+        body = json.loads(message["Body"])
+        event_id = str(uuid.uuid4())
+        item = {
+            "event_id": {"S": event_id},
+            "user_id": {"S": body["user_id"]},
+            "flag_name": {"S": body["flag_name"]},
+            "result": {"BOOL": body["result"]},
+            "timestamp": {"S": body["timestamp"]},
+        }
+        dynamodb_client.put_item(
+            TableName=DYNAMODB_TABLE_NAME,
+            Item=item
+        )
+        log.info(
+            "Evento %s (Flag: %s) salvo no DynamoDB.",
+            event_id,
+            body["flag_name"]
+        )
+        sqs_client.delete_message(
+            QueueUrl=SQS_QUEUE_URL,
+            ReceiptHandle=message["ReceiptHandle"]
+        )
+    except json.JSONDecodeError:
+        log.error(
+            "Erro ao decodificar JSON da mensagem ID: %s",
+            message["MessageId"]
+        )
+    except ClientError as e:
+        log.error(
+            "Erro do Boto3 (DynamoDB ou SQS) ao processar %s: %s",
+            message["MessageId"],
+            e,
+        )
+    except Exception as e:
+        log.error(
+            "Erro inesperado ao processar %s: %s",
+            message["MessageId"],
+            e
+        )
+
+
+def sqs_worker_loop():
+    """Loop principal do worker que ouve a fila SQS"""
+    log.info("Iniciando o worker SQS...")
+    while True:
+        try:
+            response = sqs_client.receive_message(
+                QueueUrl=SQS_QUEUE_URL,
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=20,
+            )
+            messages = response.get("Messages", [])
+            if not messages:
+                continue
+            log.info("Recebidas %d mensagens.", len(messages))
+            for message in messages:
+                process_message(message)
+        except ClientError as e:
+            log.error(
+                "Erro do Boto3 no loop principal do SQS: %s", e
+            )
+            time.sleep(10)
+        except Exception as e:
+            log.error(
+                "Erro inesperado no loop principal do SQS: %s", e
+            )
+            time.sleep(10)
+
+# --- Servidor Flask (Apenas para Health Check) ---
+
+
+app = Flask(__name__)
+
+
+@app.before_request
+def set_cache_control():
+    @after_this_request
+    def add_header(response):
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
+
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+# --- Inicialização ---
+
+
+def start_worker():
+    """Inicia o worker SQS em uma thread separada"""
+    worker_thread = threading.Thread(
+        target=sqs_worker_loop,
+        daemon=True
+    )
+    worker_thread.start()
+
+
+start_worker()
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8005))
+    app.run(host="0.0.0.0", port=port, debug=False)

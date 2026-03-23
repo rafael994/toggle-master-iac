@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  namespace: analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics
+  template:
+    metadata:
+      labels:
+        app: analytics
+    spec:
+      containers:
+        - name: analytics
+          image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/analytics-service:266789e7143a3be16c1ffba5e88a5e3371f9ef91
+          envFrom:
+            - secretRef:
+                name: aws-credentials
+            - secretRef:
+                name: analytics-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
