@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: targeting
-        image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/targeting-service:latest
+        image: 837177764356.dkr.ecr.us-east-1.amazonaws.com/targeting-service:682d10f89138a08ba69b4cc1b920977ee409dd58
         ports:
         - containerPort: 8003
         envFrom:
