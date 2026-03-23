@@ -1,6 +1,6 @@
 module auth-service
 
-go 1.24.0
+go 1.26.1
 
 require (
 	github.com/jackc/pgx/v4 v4.18.3
