@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Remove possíveis versões antigas e instala as dependências corretas
-RUN pip uninstall -y werkzeug flask psycopg || true && \
+RUN pip uninstall -y werkzeug flask psycopg2-binary || true && \
     pip install --no-cache-dir --user -r requirements.txt
 
 FROM python:3.11-slim

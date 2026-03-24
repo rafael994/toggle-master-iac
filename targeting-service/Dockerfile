@@ -12,7 +12,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip uninstall -y werkzeug flask psycopg && \ 
+RUN pip uninstall -y werkzeug flask psycopg2-binary && \ 
     pip install --no-cache-dir -r requirements.txt
 
 
