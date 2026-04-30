@@ -198,7 +198,7 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update image tag to ${{ github.sha }}"
-            git push origin feat/github-actions
+            git push origin main
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #teste

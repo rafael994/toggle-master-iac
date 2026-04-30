@@ -185,12 +185,12 @@ jobs:
 
       - name: Atualiza deployment.yaml
         run: |
-          sed -i "s|image: $IMAGE_NAME:.*|image: $IMAGE_NAME:${{ github.sha }}|" GitOps/flag/deployment.yaml
+          sed -i "/flag/s|image:.*|image: ${{ env.IMAGE_NAME }}:${{ github.sha }}|g" GitOps/flag/deployment.yaml
 
       - name: Commit e push das alterações
         run: |
           git add GitOps/flag/deployment.yaml
           git commit -m "Update image tag to ${{ github.sha }}" || echo "No changes to commit"
-          git push origin feat/github-actions
+          git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
