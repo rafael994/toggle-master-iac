@@ -165,15 +165,21 @@ jobs:
           docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:${{ github.sha }}
           docker push $IMAGE_NAME:${{ github.sha }}
 
-    update-deployment-yaml:
+  # Push Docker image to ECR com tag do commit hash
+      - name: Push Docker image to ECR
+        run: |
+          docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:${{ github.sha }}
+          docker push $IMAGE_NAME:${{ github.sha }}
+
+  
+  update-deployment-yaml:
     runs-on: ubuntu-latest
     needs: docker-build-push
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Importante: o token padrão permite push se as permissões 'contents: write' estiverem no topo
-          ref: feat/github-actions 
+          ref: feat/github-actions
 
       - name: Configura usuário do git
         run: |
@@ -182,23 +188,20 @@ jobs:
 
       - name: Atualiza deployment.yaml
         run: |
-          # Usamos chaves ${IMAGE_NAME} para garantir a expansão e confirmamos o caminho do arquivo
-          # O uso do | como delimitador no sed é essencial para URLs de ECR
+          # Usando a variável de ambiente global ou via contexto ${{ env.IMAGE_NAME }}
           sed -i "s|image: ${{ env.IMAGE_NAME }}:.*|image: ${{ env.IMAGE_NAME }}:${{ github.sha }}|" GitOps/analytics/deployment.yaml
-          
-          # Debug: Mostra como ficou o arquivo (opcional, para logs)
-          grep "image:" GitOps/analytics/deployment.yaml
 
       - name: Commit e push das alterações
         run: |
           git add GitOps/analytics/deployment.yaml
-          # Verifica se houve mudança antes de commitar para evitar erro de 'clean working tree'
           if git diff --staged --quiet; then
-            echo "Nenhuma alteração detectada no deployment.yaml"
+            echo "No changes to commit"
           else
-            git commit -m "Update image tag to ${{ github.sha }} [skip ci]"
+            git commit -m "Update image tag to ${{ github.sha }}"
             git push origin feat/github-actions
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # update-deployment-yaml:
   #   runs-on: ubuntu-latest
