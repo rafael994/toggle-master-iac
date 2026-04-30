@@ -16,7 +16,7 @@ spec:
       serviceAccountName: minha-app-sa
       containers:
         - name: evaluation
-          image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/evaluation-service
+          image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/evaluation-service:246e39af38c41f5cebae07c9ebd7625f1b52fabd
           ports:
             - containerPort: 8004
           resources:
