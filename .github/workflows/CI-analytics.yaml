@@ -189,7 +189,7 @@ jobs:
       - name: Atualiza deployment.yaml
         run: |
           # Usando a variável de ambiente global ou via contexto ${{ env.IMAGE_NAME }}
-          sed -i "s|image: ${{ env.IMAGE_NAME }}:.*|image: ${{ env.IMAGE_NAME }}:${{ github.sha }}|" GitOps/analytics/deployment.yaml
+          sed -i "/analytics/s|image:.*|image: ${{ env.IMAGE_NAME }}:${{ github.sha }}|g" GitOps/analytics/deployment.yaml
 
       - name: Commit e push das alterações
         run: |
