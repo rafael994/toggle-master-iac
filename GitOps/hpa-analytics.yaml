@@ -10,4 +10,4 @@ spec:
     name: analytics # Nome do deployment do seu service
   minReplicas: 2     # Número mínimo de pods
   maxReplicas: 10    # Número máximo de pods
-  targetCPUUtilizationPercentage: 70
+  targetCPUUtilizationPercentage: 70 #porcentagem de utilização de CPU para acionar a escala
