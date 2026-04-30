@@ -206,7 +206,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: feat/github-actions
+          ref: main
 
       - name: Configura usuário do git
         run: |
@@ -215,7 +215,7 @@ jobs:
 
       - name: Atualiza branch local com remoto
         run: |
-          git pull --rebase origin feat/github-actions
+          git pull --rebase origin main
 
       - name: Atualiza deployment.yaml
         run: |
