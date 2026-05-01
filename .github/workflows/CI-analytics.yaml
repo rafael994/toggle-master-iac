@@ -194,41 +194,21 @@ jobs:
       - name: Commit e push das alterações
         run: |
           git add GitOps/analytics/deployment.yaml
+          
           if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update image tag to ${{ github.sha }}"
-            git push origin main
+            echo "Nenhuma alteração para commitar."
+            exit 0
           fi
+
+          git commit -m "Update image tag to ${{ github.sha }} [skip ci]"
+
+          # Tenta o push com rebase até 3 vezes em caso de conflito de concorrência
+          for i in {1..3}; do
+            echo "Tentativa de push $i..."
+            git pull --rebase origin main && git push origin main && break || {
+              echo "Falha no push. Tentando sincronizar novamente..."
+              sleep 5
+            }
+          done
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #teste
-
-  # update-deployment-yaml:
-  #   runs-on: ubuntu-latest
-  #   needs: docker-build-push
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         ref: feat/github-actions
-
-  #     - name: Configura usuário do git
-  #       run: |
-  #         git config --global user.email "github-actions@github.com"
-  #         git config --global user.name "GitHub Actions"
-
-  #     - name: Atualiza branch local com remoto
-  #       run: |
-  #         git pull --rebase origin feat/github-actions
-
-  #     - name: Atualiza deployment.yaml
-  #       run: |
-  #         sed -i "s|image: $IMAGE_NAME:.*|image: $IMAGE_NAME:${{ github.sha }}|" GitOps/analytics/deployment.yaml
-
-  #     - name: Commit e push das alterações
-  #       run: |
-  #         git add GitOps/analytics/deployment.yaml
-  #         git commit -m "Update image tag to ${{ github.sha }}" || echo "No changes to commit"
-  #         git push origin feat/github-actions
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

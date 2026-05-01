@@ -189,23 +189,22 @@ jobs:
 
       - name: Commit e push das alterações
         run: |
-          # 1. Adiciona o arquivo
           git add GitOps/flag/deployment.yaml
           
-          # 2. Verifica se houve mudança real (evita erro de commit vazio)
           if git diff --staged --quiet; then
             echo "Nenhuma alteração para commitar."
             exit 0
           fi
 
-          # 3. Faz o commit local
           git commit -m "Update image tag to ${{ github.sha }} [skip ci]"
 
-          # 4. Sincroniza com o remoto usando REBASE
-          # Isso coloca o seu commit no topo da pilha, evitando o erro de 'rejected'
-          git pull --rebase origin main
-
-          # 5. Tenta o push
-          git push origin main
+          # Tenta o push com rebase até 3 vezes em caso de conflito de concorrência
+          for i in {1..3}; do
+            echo "Tentativa de push $i..."
+            git pull --rebase origin main && git push origin main && break || {
+              echo "Falha no push. Tentando sincronizar novamente..."
+              sleep 5
+            }
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
