@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: flag
-        image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/flags-service:e7be10bbf49dc89424543902bbc0538f7cdb9768
+        image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/flags-service:f88cddb4e807ca5835ab954515cfa418143c43b6
         ports:
         - containerPort: 8002
         envFrom:
