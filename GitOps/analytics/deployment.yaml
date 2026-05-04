@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: analytics
-          image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/analytics-service:c582ff7fb19cafa3af5f7e2c897ad0b3058e0f18
+          image: 063484726576.dkr.ecr.us-east-1.amazonaws.com/analytics-service:34131732d07a4f848cc39d63dc5756f8374c7a1b
           envFrom:
             - secretRef:
                 name: aws-credentials
