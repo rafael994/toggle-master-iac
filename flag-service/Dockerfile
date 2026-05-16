@@ -22,4 +22,4 @@ RUN apt-get update && apt-get upgrade -y openssl && \
     pip install --no-cache-dir --user -r requirements.txt && \
     pip show werkzeug && pip show flask
 
-CMD ["python", "app.py"]
+CMD ["opentelemetry-instrument","python", "app.py"]

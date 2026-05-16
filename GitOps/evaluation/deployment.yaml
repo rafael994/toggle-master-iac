@@ -45,3 +45,9 @@ spec:
               value: http/protobuf
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.namespace=togglemaster, deployment.environment=dev, k8s.namespace.name=evaluation
+            - name: OTEL_LOGS_EXPORTER
+              value: otlp
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
