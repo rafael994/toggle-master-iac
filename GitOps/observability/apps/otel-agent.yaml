@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-agent
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    targetRevision: 0.153.0
+    helm:
+      releaseName: otel-agent
+      values: |
+        mode: daemonset
+
+        image:
+          repository: otel/opentelemetry-collector-k8s
+
+        presents:
+          logsCollector:
+            enabled: true
+            includeCollectorsLogs: false
+          kubernetesAttributes:
+            enabled: true
+
+        config:
+          processors:
+            memory_limiter:
+              check_interval: 5s
+              limit_percentage: 80
+              spike_limit_percentage: 25
+            batch: {}
+
+          exporters:
+            otlp/gateway:
+              endpoint: otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317
+              tls:
+                insecure: true
+            debug: {}
+
+          service:
+            pipelines:
+              logs:
+                processors: [memory_limiter, batch]
+                exporters: [otlp/gateway]
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

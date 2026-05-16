@@ -28,3 +28,12 @@ spec:
           limits:
             cpu: "500m"
             memory: "256Mi"
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: targeting-service
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4318
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: http/protobuf
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.namespace=togglemaster, deployment.environment=dev, k8s.namespace.name=targeting

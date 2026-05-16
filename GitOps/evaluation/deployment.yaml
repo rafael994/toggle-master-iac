@@ -37,3 +37,11 @@ spec:
                 secretKeyRef:
                   name: redis-secret
                   key: REDIS_URL
+            - name: OTEL_SERVICE_NAME
+              value: evaluation-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4318
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.namespace=togglemaster, deployment.environment=dev, k8s.namespace.name=evaluation
