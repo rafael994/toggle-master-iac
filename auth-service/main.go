@@ -18,6 +18,13 @@ type App struct {
 }
 
 func main() {
+	ctx := context.Background()
+	shutdown, err := setupTelemetry(ctx, "auth-service")
+	if err != nil {
+		log.Fatalf("Erro ao configurar telemetria: %v", err)
+	}
+	defer shutdown(ctx)
+
 	// Carrega o .env para desenvolvimento local. Em produção, isso não fará nada.
 	_ = godotenv.Load()
 

@@ -1,0 +1,195 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: otel-gateway
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    targetRevision: 0.153.0
+
+    helm:
+      releaseName: otel-gateway
+
+      values: |
+        mode: deployment
+
+        image:
+          repository: otel/opentelemetry-collector-contrib
+
+        command:
+          name: otelcol-contrib
+
+        presets:
+          logsCollection:
+            enabled: true
+
+        ports:
+          otlp:
+            enabled: true
+
+          otlp-http:
+            enabled: true
+            
+          prometheus:
+            enabled: true
+            containerPort: 8889
+            servicePort: 8889
+            protocol: TCP
+
+          metrics:
+            enabled: true
+
+        serviceMonitor:
+          enabled: true
+          metricsEndpoints:
+            - port: prometheus
+              path: /metrics
+              interval: 30s
+
+        extraEnvs:
+          - name: NEW_RELIC_LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: newrelic-secret
+                key: NEW_RELIC_LICENSE_KEY
+          - name: NEW_RELIC_OTLP_ENDPOINT
+            value: https://otlp.nr-data.net:4318
+           
+
+        config:
+          extensions:
+            health_check:
+              endpoint: 0.0.0.0:13133
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+
+                http:
+                  endpoint: 0.0.0.0:4318
+
+            filelog:
+              include:
+                - /var/log/pods/*/*/*.log
+
+              exclude:
+                - /var/log/pods/observability_*/**/*.log
+
+              start_at: end
+
+              include_file_path: true
+              include_file_name: false
+
+              operators:
+                - type: container
+
+          processors:
+            memory_limiter:
+              check_interval: 5s
+              limit_percentage: 80
+              spike_limit_percentage: 25
+
+            batch: {}
+
+            resource:
+              attributes:
+                - key: deployment.environment
+                  value: dev
+                  action: upsert
+
+          exporters:
+            prometheus:
+              endpoint: 0.0.0.0:8889
+              resource_to_telemetry_conversion:
+                enabled: true
+
+            otlphttp/loki:
+              endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
+            
+
+            otlphttp/newrelic:
+              endpoint: https://otlp.nr-data.net:4318
+
+              headers:
+                api-key: ${env:NEW_RELIC_LICENSE_KEY}
+              compression: gzip
+
+            debug: {}
+
+          service:
+            extensions: [health_check]
+
+            telemetry:
+              logs:
+                level: info
+
+            pipelines:
+              metrics:
+                receivers:
+                  - otlp
+
+                processors:
+                  - memory_limiter
+                  - batch
+                  - resource
+
+                exporters:
+                  - prometheus
+                  - otlphttp/newrelic
+
+              traces:
+                receivers:
+                  - otlp
+
+                processors:
+                  - memory_limiter
+                  - batch
+                  - resource
+
+                exporters:
+                  - otlphttp/newrelic
+                  - debug
+
+              logs:
+                receivers:
+                  - otlp
+                  - filelog
+
+                processors:
+                  - memory_limiter
+                  - resource
+                  - batch
+
+                exporters:
+                  - otlphttp/loki
+                  - otlphttp/newrelic
+
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+
+          requests:
+            cpu: 200m
+            memory: 512Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true

@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: togglemaster-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+
+data:
+  togglemaster-dashboard.json: |
+    {
+      "uid": "togglemaster-overview",
+      "title": "ToggleMaster - Observability Overview",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "CPU por namespace",
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{container!=\"\",pod!=\"\"}[5m]))",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Memory por namespace",
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (namespace) (container_memory_working_set_bytes{container!=\"\",pod!=\"\"})",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Logs de ToggleMaster",
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 24,
+            "h": 8
+          },
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=~\"auth|flag|targeting|evaluation|analytics\"}"
+            }
+          ]
+        }
+      ]
+    }
