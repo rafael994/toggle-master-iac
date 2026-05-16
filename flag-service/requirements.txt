@@ -9,6 +9,6 @@ wheel>=0.46.2
 opentelemetry-distro
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-flask
-opentelemetry-exporter-otlp-proto-http-proto-http
+opentelemetry-exporter-otlp-proto-http
 opentelemetry-instrumentation-psycopg2
 opentelemetry-instrumentation-botocore
